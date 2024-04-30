@@ -1,0 +1,172 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <nav class="navbar navbar-expand-lg bg-body-tertiary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">AMOS</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/">Home</a>
+                        </li>
+
+                        {% if not request.session.user_email %}
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/login">Login</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/register">Register</a>
+                        </li>
+                        {% endif %}
+
+                        {% if request.session.user_email %}
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/dashboard">Dashboard</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/logout">Logout</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container mt-4">
+        <div class="card mt-2">
+            <div class="card-header">Akademik İlgi Alanları Güncelle</div>
+            <div class="card-body">
+                <form method="post" action="/updateInterestAreasForm">
+                    {% csrf_token %}
+                    <p>Lütfen ilgi alanlarınızı seçin veya belirtin:</p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani1" name="ilgi_alanlari"
+                            value="Bilgisayar Bilimleri" {% if 'Bilgisayar Bilimleri' in user_data.ilgi_alanlari %}
+                            checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani1">Bilgisayar Bilimleri</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani2" name="ilgi_alanlari"
+                            value="Yapay Zeka" {% if 'Yapay Zeka' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani2">Yapay Zeka</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani3" name="ilgi_alanlari"
+                            value="Veri Bilimi" {% if 'Veri Bilimi' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani3">Veri Bilimi</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani4" name="ilgi_alanlari"
+                            value="Makine Öğrenmesi" {% if 'Makine Öğrenmesi' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani4">Makine Öğrenmesi</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani5" name="ilgi_alanlari"
+                            value="Nesne Yönelimli Programlama"
+                            {% if 'Nesne Yönelimli Programlama' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani5">Nesne Yönelimli Programlama</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani6" name="ilgi_alanlari"
+                            value="Doğal Dil İşleme" {% if 'Doğal Dil İşleme' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani6">Doğal Dil İşleme</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani7" name="ilgi_alanlari"
+                            value="Robotik" {% if 'Robotik' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani7">Robotik</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani8" name="ilgi_alanlari"
+                            value="Büyük Veri" {% if 'Büyük Veri' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani8">Büyük Veri</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani9" name="ilgi_alanlari"
+                            value="Görüntü İşleme" {% if 'Görüntü İşleme' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani9">Görüntü İşleme</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani10" name="ilgi_alanlari"
+                            value="Blockchain" {% if 'Blockchain' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani10">Blockchain</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani11" name="ilgi_alanlari"
+                            value="Veri Madenciliği" {% if 'Veri Madenciliği' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani11">Veri Madenciliği</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani12" name="ilgi_alanlari"
+                            value="Bilişim Hukuku" {% if 'Bilişim Hukuku' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani12">Bilişim Hukuku</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani13" name="ilgi_alanlari"
+                            value="Bilgisayar Mühendisliği"
+                            {% if 'Bilgisayar Mühendisliği' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani13">Bilgisayar Mühendisliği</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani14" name="ilgi_alanlari"
+                            value="Bilişim Sistemleri" {% if 'Bilişim Sistemleri' in user_data.ilgi_alanlari %} checked
+                            {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani14">Bilişim Sistemleri</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ilgi_alani15" name="ilgi_alanlari"
+                            value="E-ticaret" {% if 'E-ticaret' in user_data.ilgi_alanlari %} checked {% endif %}>
+                        <label class="form-check-label" for="ilgi_alani15">E-ticaret</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-5">Güncelle</button>
+                    <a href="/dashboard" type="button" class="btn btn-secondary mt-5">İptal</a>
+
+
+                    {% for message in messages %}
+                    {% if message.tags == 'error' %}
+                        <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="{% static '/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+
+</html>
