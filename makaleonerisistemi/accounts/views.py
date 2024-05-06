@@ -7,6 +7,13 @@ from django.contrib import messages
 from pymongo import MongoClient
 from django.contrib.auth import authenticate, login, get_user_model, logout
 from django.contrib.auth.hashers import check_password
+import nltk
+import tokenizer as tokenizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import SnowballStemmer
+import string
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +21,8 @@ logger = logging.getLogger(__name__)
 client = MongoClient('localhost', 27017)
 db = client['amosdb']  # MongoDB veritabanı adı
 users_collection = db['users']  # Kullanıcı koleksiyonu
+#nltk.download('punkt')# bunu bir kere indirmeliyiz
+#nltk.download('stopwords')# bunu bir kere indirmeliyiz
 
 def userRegister(request):
     if request.method == 'POST':
@@ -46,12 +55,16 @@ def userRegister(request):
 def home(request):
     return render(request, "index.html")
 
+
 def dashboard(request):
     if 'user_email' in request.session:
         
         # Kullanıcı oturumu açık ise dashboard sayfasını göster
         user_data = users_collection.find_one({'email': request.session['user_email']})
         if user_data:
+            ialanlari=str(user_data.get('ilgi_alanlari'))
+            processed_text = preprocess_text(ialanlari+"  dataing, cries, studies ")
+            print("processed_text: ",processed_text)
             return render(request, 'dashboard.html', {'user_data': user_data})
         else:
             # Kullanıcı verileri bulunamadıysa hata mesajı göster
@@ -62,7 +75,6 @@ def dashboard(request):
         return redirect('home')
 
 
-
 def userLogin(request):
     form = AuthenticationForm()
     if request.method == 'POST':
@@ -71,12 +83,12 @@ def userLogin(request):
 
         try:
             user = users_collection.find_one({'email': email})
-            if user:
+            if user is not None:  # Kullanıcı bulunduysa
                 stored_password = user.get('password')
                 if password == stored_password:
                     # Şifre doğru, kullanıcı oturumunu başlat
                     print("User found and password is correct.")
-                    # Burada oturumu başlatmak için gerekli adımları gerçekleştirin
+                    # Oturumu başlatmak için gerekli adımları gerçekleştirin
                     request.session['user_email'] = email
                     return redirect('dashboard')  # veya başka bir sayfaya yönlendirin
                 else:
@@ -151,3 +163,18 @@ def updateInterestAreasForm(request):
             messages.error(request, 'Lütfen en az bir ilgi alanı seçin.')
     
     return redirect('dashboard')
+
+# Metin ön işleme fonksiyonu
+def preprocess_text(text):
+    print("PREPROCESS İŞLEMİ")
+    text = text.lower()# kucuk harfe donusturuldu
+    text = text.translate(str.maketrans('', '', string.punctuation))# noktalama isaretleri
+    words = word_tokenize(text)#kelimeler ayrildi
+    print("a1")
+    stop_words = set(stopwords.words('english'))
+    words = [word for word in words if word not in stop_words]
+    print("a1")
+    stemmer = SnowballStemmer("english")
+    words = [stemmer.stem(word) for word in words]
+    print("PREPROCES WORD")
+    return words
