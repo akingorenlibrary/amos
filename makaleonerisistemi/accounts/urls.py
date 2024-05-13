@@ -10,5 +10,7 @@ urlpatterns = [
     path('logout', views.userLogout, name='logout'),
     path('updatefullname', views.updatefullname, name='updatefullname'),
     path('updateInterestAreas', views.updateInterestAreas, name='updateInterestAreas'),
-    path('updateInterestAreasForm', views.updateInterestAreasForm, name='updateInterestAreasForm')
+    path('updateInterestAreasForm', views.updateInterestAreasForm, name='updateInterestAreasForm'),
+    path('articleDetail/<str:id>', views.articleDetail, name='articleDetail'),
+    path('search/', views.search, name='search'),
 ]

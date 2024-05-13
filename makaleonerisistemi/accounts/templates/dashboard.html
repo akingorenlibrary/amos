@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -62,10 +61,10 @@
                     <div class="card-body">
                         {% if request.session.user_email %}
                         <p><strong>Full Name:</strong> {{ user_data.fullname }} | <button type="button"
-                                class="btn btn-info btn-sm" id="fullname">Update</button></p>
+                                class="btn btn-primary btn-sm" id="fullname">Update</button></p>
                         <p><strong>Email:</strong> {{ user_data.email }}</p>
                         <p><strong>Interest Areas:</strong> | <a href="/updateInterestAreas" type="button"
-                            class="btn btn-secondary btn-sm" >Update</a></p>
+                                class="btn btn-secondary btn-sm">Update</a></p>
                         <ul>
                             {% for interest in user_data.ilgi_alanlari %}
                             <li>{{ interest }}</li>
@@ -87,7 +86,7 @@
                                 </div>
                             </form>
                         </div>
-                        
+
                         {% else %}
                         <p class="text-center">Please login to view dashboard.</p>
                         {% endif %}
@@ -99,25 +98,80 @@
         <div class="row mt-3">
             <div class="col-md-12">
                 {% for message in messages %}
-                    {% if message.tags == 'error' %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endif %}
+                {% if message.tags == 'error' %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
                 {% endfor %}
-                
+
                 {% for message in messages %}
-                    {% if message.tags == 'success' %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endif %}
+                {% if message.tags == 'success' %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
         </div>
-        
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">Sizin için önerilenler - Fasttext</div>
+                    <div class="card-body">
+                        {% for article in f_advantages_data %}
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ article.icerik |slice:":50" }}</h5>
+                                        <hr>
+                                        <p class="card-text">{{ article.icerik |slice:":100" }}...</p>
+                                        <p class="card-text"><strong>Anahtar Kelimeler:</strong>
+                                            {{ article.key_icerik |slice:":100" }}...</p>
+                                            <hr>
+                                            <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">Sizin için önerilenler - Scibert</div>
+                    <div class="card-body">
+                        {% for article in s_advantages_articles %}
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ article.icerik |slice:":50"  }}</h5>
+                                        <hr>
+                                        <p class="card-text">{{ article.icerik |slice:":100" }}</p>
+                                        <p class="card-text"><strong>Anahtar Kelimeler:</strong>
+                                            {{ article.key_icerik}}</p>
+                                            <hr>
+                                            <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 
     <!-- Bootstrap JS -->
@@ -127,7 +181,7 @@
             button.addEventListener('click', function () {
                 var fieldName = this.id;
                 var formAction = "";
-                
+
                 if (fieldName === 'fullname') {
                     formAction = "/updatefullname";
                 } else if (fieldName === 'email') {
@@ -135,12 +189,12 @@
                 } else if (fieldName === 'interestAreas') {
                     formAction = "/updateinterestareas";
                 }
-                
+
                 // Formun action attribute'unu güncelle
                 var updateForm = document.getElementById("update-form");
                 var form = updateForm.querySelector('form');
                 form.action = formAction;
-    
+
                 // Formu göster veya gizle
                 if (updateForm.style.display === 'none') {
                     updateForm.style.display = 'block';
@@ -150,7 +204,7 @@
             });
         });
     </script>
-    
+
 </body>
 
 </html>

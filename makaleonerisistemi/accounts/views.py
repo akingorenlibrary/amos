@@ -20,6 +20,7 @@ import fasttext.util
 import os
 import torch
 from huggingface_hub import hf_hub_download
+from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ makale_collection = db['articles']  # Makale koleksiyonu
 #nltk.download('punkt')# bunu bir kere indirmeliyiz
 #nltk.download('stopwords')# bunu bir kere indirmeliyiz
 
-fasttext.util.download_model("en", if_exists="ignore")# bu model iï¿½in bir kere indirdikten sonra kapatilacak
+#fasttext.util.download_model("en", if_exists="ignore")# bu model i�in bir kere indirdikten sonra kapatilacak
 fasttext_model = fasttext.load_model('cc.en.300.bin')
 fasttext_tokenizer = fasttext.tokenize('cc.en.300.bin')
 
@@ -72,11 +73,13 @@ def userRegister(request):#EKLEME: buraya kullanici ilgi alanlariyla birlikte fa
             return redirect('login')  # 'home' isimli URL'ye yonlendir
         else:
             # Hata mesaji goster
-            messages.error(request, 'LÃ¼tfen tÃ¼m alanlarÄ± doldurun.')
+            messages.error(request, 'Lütfen tüm alanları doldurun.')
     
     return render(request, 'register.html')  # GET request oldugunda register.html sayfasini goster
 
 def home(request):
+    if 'user_email' not in request.session:
+        return redirect('login')
     return render(request, "index.html")
 
 def dashboard(request):
@@ -101,13 +104,13 @@ def dashboard(request):
                 for article_vector in documents:
                     ft = article_vector.get("fasttext", [])
                     similarity_score = cosine_similarity(ft, user_vector)
-                    similarity_scores.append((article_vector.get("_id"), similarity_score))
-                    print("ft Cosine Similarity Score - " + str(article_vector.get("_id")) + ": ", similarity_score)
+                    similarity_scores.append((article_vector.get("baslik"), similarity_score))
+                    print("ft Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score)
 
                     st = article_vector.get("scibert", [])
                     similarity_score2 = cosine_similarity(st, user_vector1)
-                    similarity_scores2.append((article_vector.get("_id"), similarity_score2))
-                    print("sb Cosine Similarity Score - " + str(article_vector.get("_id")) + ": ", similarity_score2)   
+                    similarity_scores2.append((article_vector.get("baslik"), similarity_score2))
+                    print("sb Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score2)   
                 
                 top_5_scores_with_ids = get_top_5_similarity_scores_with_ids(similarity_scores)
                 top_5_scores_with_ids2 = get_top_5_similarity_scores_with_ids(similarity_scores2)
@@ -119,11 +122,30 @@ def dashboard(request):
                     similarity_id2.append(fso[0])
                 #print(similarity_id)
                     
-                # Kullanıcı verilerini güncelle
+                # Kullan�c� verilerini g�ncelle
                 users_collection.update_one({'_id': user_data['_id']}, {'$set': {'f_advantages': similarity_id}})
                 users_collection.update_one({'_id': user_data['_id']}, {'$set': {'s_advantages': similarity_id2}})
 
-            return render(request, 'dashboard.html', {'user_data': user_data})   
+                # Kullan�c�n�n ilgili makalelerini al
+                f_advantages = user_data.get('f_advantages', [])
+                s_advantages = user_data.get('s_advantages', [])
+
+                # �lgili makaleleri �ek
+                f_advantages_articles = makale_collection.find({'_id': {'$in': f_advantages}})
+                s_advantages_articles = makale_collection.find({'_id': {'$in': s_advantages}})
+
+                f_advantages_data = []
+                for article in f_advantages_articles:
+                    article_data = {
+                        "kimlik": str(article["_id"]),
+                        "baslik": article["baslik"],
+                        "icerik": article["icerik"],
+                        "key_icerik": article["key_icerik"]
+                    }
+                    # Makale verisini listeye ekle
+                    f_advantages_data.append(article_data)
+
+            return render(request, 'dashboard.html', {'user_data': user_data, "f_advantages_data":f_advantages_data, "s_advantages_articles":s_advantages_articles})   
     
         else:
             # Kullanici verileri bulunamadiysa hata mesaji goster
@@ -132,22 +154,64 @@ def dashboard(request):
     else:
         # Kullanici oturumu kapali ise ana sayfaya yonlendir
         return redirect('home')
+        
+def search(request):
+    query = request.GET.get('query', '')
+    search_option = request.GET.get('search_option', '')
+    print("search_option: ",search_option)
+
+    if search_option == 'baslik':
+        articles = makale_collection.find({'baslik': {'$regex': query, '$options': 'i'}})
+    elif search_option == 'key':
+        articles = makale_collection.find({'key_icerik': {'$regex': query, '$options': 'i'}})
+    elif search_option == 'baslikAndKey':
+        articles = makale_collection.find({
+            '$or': [
+                {'baslik': {'$regex': query, '$options': 'i'}},
+                {'key_icerik': {'$regex': query, '$options': 'i'}}
+            ]
+        })
+    else:
+        articles = makale_collection.find({'baslik': {'$regex': query, '$options': 'i'}})
+
+    f_advantages_data = []
+    for article in articles:
+        article_data = {
+            "kimlik": str(article["_id"]),
+            "baslik": article["baslik"],
+            "icerik": article["icerik"],
+            "key_icerik": article["key_icerik"]
+        }
+        f_advantages_data.append(article_data)
+
+    return render(request, 'index.html', {'results': f_advantages_data})
+
 
 def get_top_5_similarity_scores_with_ids(similarity_scores):
-    # similarity_scores listesini benzerlik skorlarına göre sırala
+    # similarity_scores listesini benzerlik skorlar�na g�re s�rala
     sorted_similarity_scores = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
 
-    # En yüksek 5 benzerlik skorunu seç
+    # En y�ksek 5 benzerlik skorunu se�
     top_5_similarity_scores = sorted_similarity_scores[:5]
 
-    # Her bir benzerlik skorunun karşısına makale ID'sini ekleyerek iki boyutlu bir dizi oluştur
+    # Her bir benzerlik skorunun kar��s�na makale ID'sini ekleyerek iki boyutlu bir dizi olu�tur
     top_5_similarity_scores_with_ids = [(article_id, similarity_score) for article_id, similarity_score in top_5_similarity_scores]
 
     return top_5_similarity_scores_with_ids
 
+def articleDetail(request, id):
+    obj_id = ObjectId(id)
+    article = makale_collection.find_one({"_id": obj_id})
+    user_email = request.session['user_email']
+    users_collection.update_one(
+        {'email': user_email},
+        {'$addToSet': {'searchKeys': article.get('key_icerik')}}
+    )
+    return render(request, 'articleDetail.html', {'article': article})
+
 def userLogin(request):
     form = AuthenticationForm()
-    makaleKayit()    #bu kÄ±sÄ±m tum makaleler yuklenikten sonra yoruma alinmali
+    #makaleKayit()    #bu kısım tum makaleler yuklenikten sonra yoruma alinmali
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
@@ -207,7 +271,7 @@ def updateInterestAreas(request):
             return render(request, 'updateInterestAreas.html', {'user_data': user_data})
         else:
             # Kullanici verileri bulunamadiysa hata mesaji goster
-            messages.error(request, 'KullanÄ±cÄ± verileri bulunamadÄ±.')
+            messages.error(request, 'Kullanıcı verileri bulunamadı.')
             return redirect('home')
     else:
         # Kullanici oturumu kapali ise ana sayfaya yonlendir
@@ -225,19 +289,19 @@ def updateInterestAreasForm(request):
                     users_collection.update_one({'email': user_email}, {'$set': {'ilgi_alanlari': ilgi_alanlari}})
                     messages.success(request, 'ilgi alanlari basariyla guncellendi.')
                 else:
-                    messages.error(request, 'Kullanici oturumu bulunamadÄ±.')
+                    messages.error(request, 'Kullanici oturumu bulunamadı.')
             except Exception as e:
                 print("ilgi alanlari guncelleme sonrasinda bir hata olustu:", e)
                 messages.error(request, 'ilgi alanlari guncelleme islemi sonrasinda bir hata olustu.')
         else:
-            messages.error(request, 'Lutfen en az bir ilgi alanÄ± seÃ§in.')
+            messages.error(request, 'Lutfen en az bir ilgi alanı seçin.')
     
     return redirect('dashboard')
 
 # Metin on isleme fonksiyonu
 #bu kisimda makalelerinde on isleme adimi yapilacak
 def preprocess_text(text):
-    #print("PREPROCESS Ä°Å�LEMÄ°")
+    #print("PREPROCESS İŞLEMİ")
     text= " ".join(text)
     text = text.lower()# kucuk harfe donusturuldu
     text = text.translate(str.maketrans('', '', string.punctuation))# noktalama isaretleri
@@ -270,7 +334,7 @@ def kullaniciVektorS(ilgiAlanlari):#SCIBERT
     
     return user_vector
 
-#EKLEME: makalekayit alÄ±rken anahtar kelimelerde eklenmeli
+#EKLEME: makalekayit alırken anahtar kelimelerde eklenmeli
 def makaleKayit():#makaleleri vektorleriyle birlikte mognodbye kayit eder
     dosya_yolu="Inspec/docsutf8/"
     dosya_yolu2="Inspec/keys/"
@@ -321,7 +385,7 @@ def makaleKayit():#makaleleri vektorleriyle birlikte mognodbye kayit eder
 def makaleVektorS(makale):#SCIBERT
     preprocessed_article = " ".join(preprocess_text(makale))    # Metin on isleme adimlari uygulandi
 
-    scibert_tokens = scibert_tokenizer.encode(preprocessed_article, return_tensors="pt", padding=True, truncation=True)
+    scibert_tokens = scibert_tokenizer.encode(preprocessed_article, return_tensors="pt", padding=True, max_length=512, truncation=True)
     scibert_output = scibert_model(scibert_tokens)
     makale_vector = scibert_output.pooler_output.detach().numpy()[0]
     #print("scibertvektor",makale_vector)

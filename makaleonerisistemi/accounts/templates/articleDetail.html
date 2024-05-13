@@ -1,5 +1,4 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -14,6 +13,7 @@
 </head>
 
 <body>
+
   <div class="container-fluid">
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
@@ -52,65 +52,25 @@
       </div>
     </nav>
   </div>
-  <div class="container-fluid">
 
-    <div class="row">
+  <div class="container mt-4">
+    <div class="row mt-3">
       <div class="col-md-12">
-        <p class="fs-1 text-center mt-3">Akademik Makale Öneri Sistemi</p>
+          <div class="card">
+              <div class="card-body">
+                  <h5 class="card-title">{{ article.icerik |slice:":50"}}</h5>
+                  <hr>
+                  <p class="card-text">{{ article.icerik}}</p>
+                  <p class="card-text"><strong>Anahtar Kelimeler:</strong>
+                      {{ article.key_icerik}}</p>
+              </div>
+          </div>
       </div>
-    </div>
-
-    <div class="row justify-content-center mt-4">
-      <form action="/search" method="GET" class="d-flex">
-        <div class="col-md-6 offset-2">
-          <input type="text" name="query" class="form-control me-2" placeholder="Arama yap...">
-
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary">Ara</button>
-        </div>
-        <div class="col-md-2 mt-1">
-          <select name="search_option" class="form-select" aria-label="Default select example">
-            <option selected value="baslik">Başlığa göre ara</option>
-            <option value="key">Keye göre ara</option>
-            <option value="baslikAndKey">Başlık ve keye göre ara</option>
-          </select>
-        </div>
-      </form>
-    </div>
-
-
-    <div class="row justify-content-center mt-4 mb-5">
-      <div class="col-md-8">
-        {% if results %}
-          {% if results|length == 0 %}
-            <div class="alert alert-warning mt-3" role="alert">
-              <p>Sonuç bulunamadı.</p>
-            </div>
-          {% else %}
-            <div class="alert alert-secondary mt-3" role="alert">
-              <p>{{ results|length }} makale bulundu.</p>
-            </div>
-          {% endif %}
-        {% endif %}
-        {% for result in results %}
-        <div class="card mt-4">
-          <div class="card-header">{{ result.icerik |slice:":50"}}</div>
-          <div class="card-body">{{ result.icerik |slice:":100" }}...</div>
-          <div class="card-body"><strong>Anahtar Kelimeler:</strong> {{ result.key_icerik |slice:":100" }}...</div>
-          <a href="/articleDetail/{{ result.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    
-    
-
+  </div>
   </div>
 
-
   <!-- Bootstrap JS -->
-  <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static '/js/bootstrap.bundle.min.js' %}"></script>
 </body>
 
 </html>
