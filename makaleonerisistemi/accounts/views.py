@@ -92,8 +92,8 @@ def dashboard(request):
             arama=str(user_data.get('searchKeys'))
             if arama:
                 ialanlari = f"{ialanlari}, {arama}"
+            #print("ialan+arama:-",ialanlari)
 
-            print("ialan+arama:-",ialanlari)
             #processed_textF = kullaniciVektorF(ialanlari)
             #processed_textS = kullaniciVektorS(ialanlari)
             documents = makale_collection.find()
@@ -103,14 +103,14 @@ def dashboard(request):
             similarity_scores2 = []
             similarity_id = []
             similarity_id2 = []
-
+            oneri=[]
+            
             if user_vector is not None and user_vector1 is not None:
                 for article_vector in documents:
                     ft = article_vector.get("fasttext", [])
                     similarity_score = cosine_similarity(ft, user_vector)
                     similarity_scores.append((article_vector.get("_id"), similarity_score))
                     #print("ft Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score)
-
                     st = article_vector.get("scibert", [])
                     similarity_score2 = cosine_similarity(st, user_vector1)
                     similarity_scores2.append((article_vector.get("_id"), similarity_score2))
@@ -120,21 +120,40 @@ def dashboard(request):
                 top_5_scores_with_ids2 = get_top_5_similarity_scores_with_ids(similarity_scores2)
                 print("top_5_scores_with_ids: ", top_5_scores_with_ids)
                 print("top_5_scores_with_ids2: ", top_5_scores_with_ids2)
+                performans1=[]
+            
                 for fso in top_5_scores_with_ids:
+                    oneri=[]
                     similarity_id.append(fso[0])
+                    #performans degerlendirmesi icin makale keyleri ve kullanici ilgi alanlari baz alindi
+                    #burada bir degisikliklik yapilabilir. GERI BILDIRIM islemi yapilirsa
+                    artcl = makale_collection.find_one({"_id": fso[0]})
+                    oneri.append(artcl.get("key_icerik",[]))    
+                    oneri = f"{oneri},"
+                    performans=calculate_precision(ialanlari,oneri)
+                    performans1.append(performans)
+                    print("Oneri performansi1:",performans)                                 #!!!bu kisim arayuzde gosterilmeli her makale icin
+
                 for fso in top_5_scores_with_ids2:
+                    oneri=[]
                     similarity_id2.append(fso[0])
+                    artcl = makale_collection.find_one({"_id": fso[0]})
+                    oneri.append(artcl.get("key_icerik",[]))    
+                    oneri = f"{oneri},"
+                    performans=calculate_precision(ialanlari,oneri)
+                    performans1.append(performans)
+                    print("Oneri performansi2:",performans)                                 #!!!bu kisim arayuzde gosterilmeli her makale icin
                 #print(similarity_id)
-                    
-                # Kullanýcý verilerini güncelle
+                # Kullanici verilerini guncelle
                 users_collection.update_one({'_id': user_data['_id']}, {'$set': {'f_advantages': similarity_id}})
                 users_collection.update_one({'_id': user_data['_id']}, {'$set': {'s_advantages': similarity_id2}})
-
-                # Kullanýcýnýn ilgili makalelerini al
+                users_collection.update_one({'_id': user_data['_id']}, {'$set': {'precision': performans1}})
+                
+                # Kullanicinin ilgili makalelerini al
                 f_advantages = user_data.get('f_advantages', [])
                 s_advantages = user_data.get('s_advantages', [])
 
-                # Ýlgili makaleleri çek
+                # ilgili makaleleri cek
                 f_advantages_articles = makale_collection.find({'_id': {'$in': f_advantages}})
                 s_advantages_articles = makale_collection.find({'_id': {'$in': s_advantages}})
 
@@ -192,10 +211,9 @@ def search(request):
 
 
 def get_top_5_similarity_scores_with_ids(similarity_scores):
-    # similarity_scores listesini benzerlik skorlarýna göre sýrala
+    # similarity_scores listesini benzerlik skorlarina gore sirala
     sorted_similarity_scores = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
-
-    # En yüksek 5 benzerlik skorunu seç
+    # En yuksek 5 benzerlik skorunu sec
     top_5_similarity_scores = sorted_similarity_scores[:5]
 
     # Her bir benzerlik skorunun karþýsýna makale ID'sini ekleyerek iki boyutlu bir dizi oluþtur
@@ -325,7 +343,6 @@ def preprocess_text(text):
     words = [stemmer.stem(word) for word in words]
     #print("PREPROCES WORD")
     #print("stopword==",words)
-
     return words
 
 def kullaniciVektorF(ilgiAlanlari):#fasttext
@@ -346,7 +363,7 @@ def kullaniciVektorS(ilgiAlanlari):#SCIBERT
     
     return user_vector
 
-#EKLEME: makalekayit alÄ±rken anahtar kelimelerde eklenmeli
+#EKLEME: makalekayit alirken anahtar kelimelerde eklenmeli
 def makaleKayit():#makaleleri vektorleriyle birlikte mognodbye kayit eder
     dosya_yolu="Inspec/docsutf8/"
     dosya_yolu2="Inspec/keys/"
@@ -416,3 +433,22 @@ def cosine_similarity(makaleVektoru, kullaniciVektoru):
     norm2 = np.linalg.norm(kullaniciVektoru)
     similarity = dot_product / (norm1 * norm2)
     return similarity
+
+def calculate_precision(user_interests, tavsiyEdilenkey):
+    true_positives = 0
+    false_positives = 0
+    user_interests=preprocess_text(user_interests)
+    keys=preprocess_text(tavsiyEdilenkey)
+    #print("tavsiyEdilenkey= ",tavsiyEdilenkey)
+    #print("user_interests= ",user_interests)
+
+    for ialan in enumerate(user_interests):
+        for key in enumerate(keys):
+            #print("key==",key[1])
+            #print("ialan==",ialan[1])
+            if key[1]==ialan[1]:  # Tahmin edilen alan kullanicinin gercek ilgi alanlari arasinda ise
+                true_positives += 1
+            else:  # Tahmin edilen alan kullanicinin gercek ilgi alanlari arasinda degilse
+                false_positives += 1
+    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+    return precision
