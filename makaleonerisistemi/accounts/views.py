@@ -73,7 +73,7 @@ def userRegister(request):#EKLEME: buraya kullanici ilgi alanlariyla birlikte fa
             return redirect('login')  # 'home' isimli URL'ye yonlendir
         else:
             # Hata mesaji goster
-            messages.error(request, 'Lütfen tüm alanları doldurun.')
+            messages.error(request, 'Lutfen tum alanlari doldurun.')
     
     return render(request, 'register.html')  # GET request oldugunda register.html sayfasini goster
 
@@ -89,9 +89,13 @@ def dashboard(request):
         user_data = users_collection.find_one({'email': request.session['user_email']})
         if user_data:
             ialanlari = str(user_data.get('ilgi_alanlari'))
+            arama=str(user_data.get('searchKeys'))
+            if arama:
+                ialanlari = f"{ialanlari}, {arama}"
+
+            print("ialan+arama:-",ialanlari)
             #processed_textF = kullaniciVektorF(ialanlari)
             #processed_textS = kullaniciVektorS(ialanlari)
-
             documents = makale_collection.find()
             user_vector = kullaniciVektorF(ialanlari)
             user_vector1 = kullaniciVektorS(ialanlari)
@@ -104,13 +108,13 @@ def dashboard(request):
                 for article_vector in documents:
                     ft = article_vector.get("fasttext", [])
                     similarity_score = cosine_similarity(ft, user_vector)
-                    similarity_scores.append((article_vector.get("baslik"), similarity_score))
-                    print("ft Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score)
+                    similarity_scores.append((article_vector.get("_id"), similarity_score))
+                    #print("ft Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score)
 
                     st = article_vector.get("scibert", [])
                     similarity_score2 = cosine_similarity(st, user_vector1)
-                    similarity_scores2.append((article_vector.get("baslik"), similarity_score2))
-                    print("sb Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score2)   
+                    similarity_scores2.append((article_vector.get("_id"), similarity_score2))
+                    #print("sb Cosine Similarity Score - " + str(article_vector.get("baslik")) + ": ", similarity_score2)   
                 
                 top_5_scores_with_ids = get_top_5_similarity_scores_with_ids(similarity_scores)
                 top_5_scores_with_ids2 = get_top_5_similarity_scores_with_ids(similarity_scores2)
@@ -302,21 +306,29 @@ def updateInterestAreasForm(request):
 #bu kisimda makalelerinde on isleme adimi yapilacak
 def preprocess_text(text):
     #print("PREPROCESS İŞLEMİ")
-    text= " ".join(text)
+    #text= " ".join(text)  #bu hatali
+    text = text.replace('\n', ' ').replace('\t', ' ')
+    text = text.replace("\\n", ' ').replace("\\t", ' ')
+
     text = text.lower()# kucuk harfe donusturuldu
+    #print("lower==",text)
     text = text.translate(str.maketrans('', '', string.punctuation))# noktalama isaretleri
+    #print("noktalama==",text)
     words = word_tokenize(text)#kelimeler ayrildi
+    #print("token==",words)
     #print("a1")
     stop_words = set(stopwords.words('english'))
+    
     words = [word for word in words if word not in stop_words]
     #print("a1")
     stemmer = SnowballStemmer("english")
     words = [stemmer.stem(word) for word in words]
     #print("PREPROCES WORD")
+    #print("stopword==",words)
+
     return words
 
 def kullaniciVektorF(ilgiAlanlari):#fasttext
-
     preprocessed_profile = " ".join(preprocess_text(ilgiAlanlari))    # Metin on isleme adimlari uygulandi
     user_vector = fasttext_model.get_sentence_vector(preprocessed_profile)
     #print("kullanici vektor:", user_vector)
