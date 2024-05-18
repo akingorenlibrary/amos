@@ -116,6 +116,7 @@
                 {% endfor %}
             </div>
         </div>
+        <p class="card-text">Total Precision: {{total_precision}}</p> 
 
         <div class="row">
             <div class="col-md-12">
@@ -137,6 +138,15 @@
                                             <hr>
                                             <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
                                             <button type="button" class="btn btn-danger btn-sm">Beğenmedim</button>
+                                            <script>
+                                                document.querySelectorAll('.btn-danger').forEach(function (button) {
+                                                    button.addEventListener('click', function () {
+                                                        var card = this.closest('.card');
+                                                        card.style.display = 'none'; // Kartı gizle
+                                                    });
+                                                });
+                                            </script>
+                                            
                                     </div>
                                 </div>
                             </div>
@@ -155,7 +165,7 @@
                         {% for article in s_advantages_articles %}
                         <div class="row mt-3">
                             <div class="col-md-12">
-                                <div class="card">
+<div class="card" data-article-id="{{ article.kimlik }}">
                                     <div class="card-body">
                                         <h5 class="card-title">{{ article.icerik|slice:":50" }} </h5>
                                         <hr>
@@ -167,6 +177,36 @@
                                             <hr>
                                             <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
                                             <button type="button" class="btn btn-danger btn-sm">Beğenmedim</button>
+                                            <script>
+                                                document.querySelectorAll('.btn-danger').forEach(function (button) {
+                                                    button.addEventListener('click', function () {
+                                                        var card = this.closest('.card'); 
+                                                        card.style.display = 'none'; 
+                                            
+                                                        var articleId = card.dataset.articleId;
+                                                        var userEmail = '{{ user_data.email }}'; 
+
+                                                        fetch(`/removeArticle/${userEmail}/${articleId}/`, {
+                                                            method: 'DELETE'
+                                                        })
+
+                                                        .then(response => {
+                                                            if (!response.ok) {
+                                                                throw new Error('Network response was not ok');
+                                                            }
+                                                            return response.json();
+                                                        })
+                                                        .then(data => {
+                                                            console.log('Article removed:', data);
+                                                        })
+                                                        .catch(error => {
+                                                            console.error('There was a problem with your fetch operation:', error);
+                                                        });
+                                                    });
+                                                });
+                                            </script>
+                                            
+                                            
                                     </div>
                                 </div>
                             </div>

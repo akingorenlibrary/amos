@@ -13,4 +13,6 @@ urlpatterns = [
     path('updateInterestAreasForm', views.updateInterestAreasForm, name='updateInterestAreasForm'),
     path('articleDetail/<str:id>', views.articleDetail, name='articleDetail'),
     path('search/', views.search, name='search'),
+    path('removeArticle/<str:kullanici_mail>/<str:makale_id>', views.removeArticle, name='removeArticle'),
+
 ]

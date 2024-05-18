@@ -21,6 +21,7 @@ import os
 import torch
 from huggingface_hub import hf_hub_download
 from bson import ObjectId
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ def home(request):
 
 def dashboard(request):
     if 'user_email' in request.session:
-        
+        aramasayac=0
         # Kullanici oturumu acik ise dashboard sayfasini goster
         user_data = users_collection.find_one({'email': request.session['user_email']})
         if user_data:
@@ -92,6 +93,10 @@ def dashboard(request):
             arama=str(user_data.get('searchKeys'))
             if arama!="None":
                 ialanlari = f"{ialanlari}, {arama}"
+                ialanlari2=user_data.get('ilgi_alanlari')
+            else:
+                ialanlari2=user_data.get('ilgi_alanlari')
+
 
             #processed_textF = kullaniciVektorF(ialanlari)
             #processed_textS = kullaniciVektorS(ialanlari)
@@ -185,8 +190,30 @@ def dashboard(request):
                     }
                     ind2+=1
                     s_advantages_data.append(article_data1)
+            if arama!="None":
 
-            return render(request, 'dashboard.html', {'user_data': user_data, "f_advantages_data":f_advantages_data, "s_advantages_articles":s_advantages_data})   
+                for metin in user_data.get('searchKeys'):
+                    kelimeler = metin.strip().split('\n')
+                    for kelime in kelimeler:
+                        aramasayac+=1
+            sayi_pozitif=0    
+            sayi_negatif=0   #begenilmeyen makalelerde eklenecek
+            lock=0
+            for article in s_advantages_data:
+                keys=article["key_icerik"]
+                key = keys.split('\n')
+                for satir in key:
+                    #print("key",satir)
+                    sayi_pozitif+=1
+                    if satir not in ialanlari2 :                        
+                        sayi_negatif+=1
+                        lock=1
+                    elif arama!="None" and lock==0 and satir not in user_data.get('searchKeys'):
+                        sayi_negatif+=1
+                        lock=0
+            total_precision=precision(len(ialanlari2)+aramasayac+sayi_pozitif,sayi_negatif)    
+            #print("total_precision",total_precision,"-----sayi:",sayi_pozitif,"----sayi_negatif:",sayi_negatif,"----ilgialanlari",len(ialanlari2)+aramasayac)
+            return render(request, 'dashboard.html', {'user_data': user_data, "f_advantages_data":f_advantages_data, "s_advantages_articles":s_advantages_data,"total_precision":total_precision})   
     
         else:
             # Kullanici verileri bulunamadiysa hata mesaji goster
@@ -367,17 +394,13 @@ def preprocess_text(text):
 
 def kullaniciVektorF(ilgiAlanlari):#fasttext
     preprocessed_profile = " ".join(preprocess_text(ilgiAlanlari))    # Metin on isleme adimlari uygulandi
-    print("deneme",preprocessed_profile)
-
     user_vector = fasttext_model.get_sentence_vector(preprocessed_profile)
     #print("kullanici vektor:", user_vector)
-
     return user_vector
 
 
 def kullaniciVektorS(ilgiAlanlari):#SCIBERT
     preprocessed_profile = " ".join(preprocess_text(ilgiAlanlari))    # Metin on isleme adimlari uygulandi
-    print("deneme",preprocessed_profile)
     scibert_tokens = scibert_tokenizer.encode(preprocessed_profile, return_tensors="pt", padding=True, truncation=True)
     scibert_output = scibert_model(scibert_tokens)
     user_vector = scibert_output.pooler_output.detach().numpy()[0]
@@ -452,20 +475,9 @@ def cosine_similarity(makaleVektoru, kullaniciVektoru):
     similarity = dot_product / (norm1 * norm2)
     return similarity
 
-def precision(user_interests, model_predictions):
-    true_positives = 0
-    false_positives = 0
+def precision(tp, fp):
     
-    for user, interests in user_interests.items():
-        predictions = model_predictions.get(user, [])
-        
-        for pred in predictions:
-            if pred in interests:
-                true_positives += 1
-            else:
-                false_positives += 1
-                
-    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
     return precision
 
 
@@ -487,3 +499,14 @@ def calculate_precision(user_interests, tavsiyEdilenkey):
                 false_positives += 1
     precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
     return precision
+
+def removeArticle(request, kullanici_mail, makale_id):
+    data =users_collection.find_one({'email': kullanici_mail})
+    makale_id = ObjectId(makale_id)
+    print("silindi.")
+    if data:
+        users_collection.update_one(
+            {'email': data['email']},
+            {'$pull': {'s_advantages': makale_id}}
+        )
+        return redirect('dashboard')
