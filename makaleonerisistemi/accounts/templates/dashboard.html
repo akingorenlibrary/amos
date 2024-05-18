@@ -129,13 +129,14 @@
                                     <div class="card-body">
                                 <h5 class="card-title">{{ article.icerik|slice:":50" }} </h5>
                                         <hr>
-                                        <p class="card-text">Precision: {{ user_data.precision|default:0 }}</p> 
+                                        <p class="card-text">Precision: {{ article.performans }}</p> 
                                         <hr>
                                         <p class="card-text">{{ article.icerik |slice:":100" }}...</p>
                                         <p class="card-text"><strong>Anahtar Kelimeler:</strong>
                                             {{ article.key_icerik |slice:":100" }}...</p>
                                             <hr>
                                             <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
+                                            <button type="button" class="btn btn-danger btn-sm">Beğenmedim</button>
                                     </div>
                                 </div>
                             </div>
@@ -156,13 +157,16 @@
                             <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title">{{ article.icerik |slice:":50"  }}</h5>
+                                        <h5 class="card-title">{{ article.icerik|slice:":50" }} </h5>
                                         <hr>
-                                        <p class="card-text">{{ article.icerik |slice:":100" }}</p>
+                                        <p class="card-text">Precision: {{ article.performans }}</p> 
+                                        <hr>
+                                        <p class="card-text">{{ article.icerik |slice:":100" }}...</p>
                                         <p class="card-text"><strong>Anahtar Kelimeler:</strong>
-                                            {{ article.key_icerik}}</p>
+                                            {{ article.key_icerik |slice:":100" }}...</p>
                                             <hr>
                                             <a href="/articleDetail/{{ article.kimlik }}" class="btn btn-primary btn-sm">İncele</a>
+                                            <button type="button" class="btn btn-danger btn-sm">Beğenmedim</button>
                                     </div>
                                 </div>
                             </div>
